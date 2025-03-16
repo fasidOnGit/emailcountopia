@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail } from 'lucide-react'; // Added missing import
+import { Mail } from 'lucide-react'; 
 import Navbar from '@/components/Navbar';
 import { LoginButton, useAuth } from '@/components/AuthButtons';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,7 +65,37 @@ const Auth = () => {
             className="w-full max-w-md"
           >
             <div className="clean-card p-8">
-              <ConnectButton />
+              {!isAuthenticated ? (
+                <div className="flex flex-col items-center space-y-6">
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 100 }}
+                    className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2"
+                  >
+                    <Mail className="h-10 w-10 text-primary" />
+                  </motion.div>
+                  
+                  <div className="text-center space-y-2 max-w-sm">
+                    <h3 className="text-xl font-semibold">Step 1: Sign in</h3>
+                    <p className="text-muted-foreground text-balance">
+                      First, sign in with your Google account to continue
+                    </p>
+                  </div>
+                  
+                  <LoginButton />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-6">
+                  <div className="text-center space-y-2 max-w-sm">
+                    <h3 className="text-xl font-semibold">Step 2: Connect to Gmail</h3>
+                    <p className="text-muted-foreground text-balance">
+                      Now, connect your Gmail account to analyze your email statistics
+                    </p>
+                  </div>
+                  <ConnectButton />
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
