@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Mail } from 'lucide-react'; // Added missing import
 import Navbar from '@/components/Navbar';
 import { LoginButton, useAuth } from '@/components/AuthButtons';
 import { supabase } from '@/integrations/supabase/client';
