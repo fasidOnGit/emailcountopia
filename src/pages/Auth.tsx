@@ -6,6 +6,7 @@ import { Mail } from 'lucide-react'; // Added missing import
 import Navbar from '@/components/Navbar';
 import { LoginButton, useAuth } from '@/components/AuthButtons';
 import { supabase } from '@/integrations/supabase/client';
+import ConnectButton from '@/components/ConnectButton';
 
 const Auth = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -64,29 +65,7 @@ const Auth = () => {
             className="w-full max-w-md"
           >
             <div className="clean-card p-8">
-              <div className="flex flex-col items-center space-y-6">
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 100 }}
-                  className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2"
-                >
-                  <Mail className="h-10 w-10 text-primary" />
-                </motion.div>
-                
-                <div className="text-center space-y-2 max-w-sm">
-                  <h3 className="text-xl font-semibold">Sign in to EmailCounter</h3>
-                  <p className="text-muted-foreground text-balance">
-                    Sign in with your Google account to get started with analyzing your email statistics
-                  </p>
-                </div>
-                
-                <LoginButton />
-                
-                <p className="text-xs text-muted-foreground text-center max-w-xs">
-                  We only read your email metadata and never store your actual email content
-                </p>
-              </div>
+              <ConnectButton />
             </div>
           </motion.div>
         </div>
