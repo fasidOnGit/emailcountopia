@@ -1,59 +1,107 @@
 
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail } from 'lucide-react'; 
 import Navbar from '@/components/Navbar';
 import { LoginButton, useAuth } from '@/components/AuthButtons';
 import { supabase } from '@/integrations/supabase/client';
 import ConnectButton from '@/components/ConnectButton';
+import { useToast } from '@/components/ui/use-toast';
 
 const Auth = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
 
   useEffect(() => {
     // Check for authentication and OAuth response
     const checkAuth = async () => {
-      // Get the URL hash to check for OAuth response
-      const hash = window.location.hash;
+      setIsProcessingOAuth(true);
       
+      // Get the URL hash and search params to check for OAuth response
+      const hash = window.location.hash;
+      const searchParams = new URLSearchParams(location.search);
+      const isGmailConnect = searchParams.get('gmailConnect') === 'true';
+      
+      // Check if we have an OAuth response (hash with access_token)
       if (hash && hash.includes('access_token')) {
         // Process the OAuth response
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (data.session) {
-          // Save the OAuth credentials to our account_connections table
-          const accessToken = new URLSearchParams(hash.substring(1)).get('access_token') || '';
-          const refreshToken = new URLSearchParams(hash.substring(1)).get('refresh_token') || null;
-          const expiresAt = new Date().getTime() + 3600 * 1000; // 1 hour expiry
+        try {
+          const { data, error } = await supabase.auth.getSession();
           
-          try {
-            await supabase.from('account_connections').upsert({
-              user_id: data.session.user.id,
-              provider: 'google',
-              provider_account_id: data.session.user.id,
-              access_token: accessToken,
-              refresh_token: refreshToken,
-              expires_at: Math.floor(expiresAt / 1000),
+          if (error) {
+            console.error('Session error:', error);
+            toast({
+              title: "Authentication error",
+              description: error.message,
+              variant: "destructive",
             });
-            
-            navigate('/dashboard');
-          } catch (error) {
-            console.error('Error saving credentials:', error);
+            setIsProcessingOAuth(false);
+            return;
           }
+          
+          if (data.session) {
+            console.log('Successfully authenticated, saving credentials');
+            
+            // Extract tokens from the hash
+            const accessToken = new URLSearchParams(hash.substring(1)).get('access_token') || '';
+            const refreshToken = new URLSearchParams(hash.substring(1)).get('refresh_token') || null;
+            const expiresAt = new Date().getTime() + 3600 * 1000; // 1 hour expiry
+            
+            try {
+              // Save the tokens to our account_connections table
+              const { error: upsertError } = await supabase.from('account_connections').upsert({
+                user_id: data.session.user.id,
+                provider: 'google',
+                provider_account_id: data.session.user.id,
+                access_token: accessToken,
+                refresh_token: refreshToken,
+                expires_at: Math.floor(expiresAt / 1000),
+              });
+              
+              if (upsertError) {
+                console.error('Error saving credentials:', upsertError);
+                toast({
+                  title: "Connection error",
+                  description: "Failed to save your Gmail connection",
+                  variant: "destructive",
+                });
+                setIsProcessingOAuth(false);
+                return;
+              }
+              
+              toast({
+                title: "Gmail connected",
+                description: "Your Gmail account has been successfully connected",
+                variant: "default",
+              });
+              
+              navigate('/dashboard');
+            } catch (error) {
+              console.error('Error saving credentials:', error);
+              toast({
+                title: "Connection error",
+                description: "Failed to save your Gmail connection",
+                variant: "destructive",
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error processing OAuth response:', error);
         }
-      }
-      
-      // If already authenticated and no OAuth process, redirect to dashboard
-      if (isAuthenticated && !isLoading && !hash) {
-        // Don't redirect if we're processing an OAuth response
+      } else if (isAuthenticated && !isLoading && !isProcessingOAuth && !isGmailConnect) {
+        // Only redirect if authenticated, not loading, not processing OAuth, and not in Gmail connect flow
         navigate('/dashboard');
       }
+      
+      setIsProcessingOAuth(false);
     };
     
     checkAuth();
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, location.search, toast]);
 
   return (
     <div className="flex flex-col min-h-screen">

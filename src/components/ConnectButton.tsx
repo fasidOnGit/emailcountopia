@@ -61,7 +61,7 @@ const ConnectButton = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/auth?gmailConnect=true`,
           scopes: 'email profile https://www.googleapis.com/auth/gmail.readonly',
           queryParams: {
             access_type: 'offline',
