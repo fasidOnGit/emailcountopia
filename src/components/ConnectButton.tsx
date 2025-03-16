@@ -1,29 +1,88 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthButtons';
 
 const ConnectButton = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    // Check if we have a valid session and redirect accordingly
+    const checkSession = async () => {
+      if (isAuthenticated) {
+        // Check if we have Gmail credentials stored
+        try {
+          const { data, error } = await supabase
+            .from('account_connections')
+            .select('*')
+            .eq('user_id', user?.id)
+            .eq('provider', 'google')
+            .single();
+          
+          if (data) {
+            // We already have Gmail connected, redirect to dashboard
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          console.error('Error checking Gmail connection:', error);
+        }
+      }
+    };
+    
+    checkSession();
+  }, [isAuthenticated, user, navigate]);
   
   const handleConnect = async () => {
     setIsConnecting(true);
     
-    // Simulate OAuth connection
-    setTimeout(() => {
-      setIsConnecting(false);
-      toast({
-        title: "Successfully connected",
-        description: "Your Gmail account has been connected successfully",
-        variant: "default",
-      });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Navigate to dashboard in a real implementation
-      // navigate('/dashboard');
-    }, 2000);
+      if (!session) {
+        // Not logged in, redirect to auth
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to connect your Gmail account",
+          variant: "default",
+        });
+        navigate('/auth');
+        return;
+      }
+      
+      // Request Gmail-specific scopes
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          scopes: 'email https://www.googleapis.com/auth/gmail.readonly',
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Connection failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Connection error:', error);
+      toast({
+        title: "Connection failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   return (
