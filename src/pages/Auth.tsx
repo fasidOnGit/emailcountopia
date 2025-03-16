@@ -25,6 +25,7 @@ const Auth = () => {
         if (data.session) {
           // Save the OAuth credentials to our account_connections table
           const accessToken = new URLSearchParams(hash.substring(1)).get('access_token') || '';
+          const refreshToken = new URLSearchParams(hash.substring(1)).get('refresh_token') || null;
           const expiresAt = new Date().getTime() + 3600 * 1000; // 1 hour expiry
           
           try {
@@ -33,6 +34,7 @@ const Auth = () => {
               provider: 'google',
               provider_account_id: data.session.user.id,
               access_token: accessToken,
+              refresh_token: refreshToken,
               expires_at: Math.floor(expiresAt / 1000),
             });
             
@@ -44,7 +46,8 @@ const Auth = () => {
       }
       
       // If already authenticated and no OAuth process, redirect to dashboard
-      if (isAuthenticated && !isLoading) {
+      if (isAuthenticated && !isLoading && !hash) {
+        // Don't redirect if we're processing an OAuth response
         navigate('/dashboard');
       }
     };

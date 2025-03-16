@@ -62,7 +62,11 @@ const ConnectButton = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          scopes: 'email https://www.googleapis.com/auth/gmail.readonly',
+          scopes: 'email profile https://www.googleapis.com/auth/gmail.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         },
       });
 
@@ -72,6 +76,7 @@ const ConnectButton = () => {
           description: error.message,
           variant: "destructive",
         });
+        setIsConnecting(false);
       }
     } catch (error) {
       console.error('Connection error:', error);
@@ -80,7 +85,6 @@ const ConnectButton = () => {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
-    } finally {
       setIsConnecting(false);
     }
   };
